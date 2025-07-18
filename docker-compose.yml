@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://gamechange_user:senha@postgres:5432/gamechange_db
+      - GCS_BUCKET=${GCS_BUCKET}
+      - GCS_KEYFILE=${GCS_KEYFILE}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+      - NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL}
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    networks:
+      - gamechange-network
+    labels:
+      - "coolify.managed=true"
+      - "coolify.type=application"
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=gamechange_db
+      - POSTGRES_USER=gamechange_user
+      - POSTGRES_PASSWORD=senha
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    networks:
+      - gamechange-network
+    labels:
+      - "coolify.managed=true"
+      - "coolify.type=database"
+
+volumes:
+  postgres_data:
+
+networks:
+  gamechange-network:
+    driver: bridge 

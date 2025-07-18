@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+.env
 
 # vercel
 .vercel
@@ -39,3 +40,21 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+.next/
+dist/
+.DS_Store
+docker-compose.override.yml
+postgres_data/
+
+/src/generated/prisma
+
+# Google Cloud credentials
+plim-ai-cb3ed5bfa6e7.json
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+!next.config.ts
+!postcss.config.mjs
+!eslint.config.mjs
