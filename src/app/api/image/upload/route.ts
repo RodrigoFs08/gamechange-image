@@ -40,10 +40,10 @@ async function uploadToGCS(file: Buffer, filename: string): Promise<string> {
     let credentials = null;
     let isJson = false;
     try {
-      // Remove espaços e aspas duplas do início
-      const trimmed = keyFile.trim().replace(/^"+/, "");
+      // Remove espaços e aspas duplas do início e fim
+      const trimmed = keyFile.trim().replace(/^"+|"+$/g, "");
       if (trimmed.startsWith("{")) {
-        credentials = JSON.parse(keyFile);
+        credentials = JSON.parse(trimmed);
         isJson = true;
       }
     } catch (e) {
