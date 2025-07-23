@@ -156,7 +156,7 @@ export default function GeneratePage() {
           )}
           {/* Prompt grande */}
           <div className="flex flex-col gap-2 w-full">
-            <label className="font-medium text-sm" style={{ color: COLORS.contrast }}>Prompt</label>
+            <label className="font-medium text-sm text-white">Prompt</label>
             <textarea
               value={prompt}
               onChange={e => setPrompt(e.target.value)}
@@ -199,15 +199,14 @@ export default function GeneratePage() {
                 <button onClick={() => handleDownload(result.generatedUrl)} className="text-xs underline mt-1" style={{ color: COLORS.neutral }}>Download</button>
               </div>
             </div>
-            <div className="text-xs text-center text-[var(--neutral)]" style={{ color: COLORS.neutral }}>
+            <div className="text-xs text-center text-white">
               Prompt: {result.prompt}
             </div>
           </div>
         )}
         <button
           onClick={() => router.push("/dashboard")}
-          className="text-xs text-center text-[var(--neutral)] underline mt-4"
-          style={{ color: COLORS.neutral }}
+          className="text-xs text-center text-white underline mt-4"
         >
           Voltar ao Dashboard
         </button>

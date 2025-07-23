@@ -55,7 +55,7 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold text-center" style={{ color: COLORS.primary }}>
             Bem-vindo{user ? `, ${user}` : ""}!
           </h1>
-          <p className="text-center text-[var(--contrast)]" style={{ color: COLORS.contrast }}>
+          <p className="text-center text-white">
             Gere imagens com IA de forma simples e rápida.<br />
             Escolha uma opção abaixo:
           </p>
@@ -77,8 +77,7 @@ export default function DashboardPage() {
           </div>
           <button
             onClick={handleLogout}
-            className="text-xs text-center text-[var(--neutral)] underline mt-4"
-            style={{ color: COLORS.neutral }}
+            className="text-xs text-center text-white underline mt-4"
           >
             Sair
           </button>

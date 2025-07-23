@@ -81,34 +81,34 @@ export default function HistoryPage() {
           <h1 className="text-2xl font-bold text-center mb-2" style={{ color: COLORS.primary }}>Histórico de Gerações</h1>
           <form onSubmit={handleFilter} className="flex flex-col sm:flex-row gap-4 items-end justify-center">
             <div className="flex flex-col gap-1">
-              <label className="text-xs" style={{ color: COLORS.contrast }}>Prompt</label>
+              <label className="text-xs text-white">Prompt</label>
               <input
                 type="text"
                 value={promptFilter}
                 onChange={e => setPromptFilter(e.target.value)}
-                className="rounded border px-2 py-1 text-sm"
-                style={{ borderColor: COLORS.neutral, color: COLORS.contrast }}
+                className="rounded border px-2 py-1 text-sm bg-black/40 text-white"
+                style={{ borderColor: COLORS.neutral }}
                 placeholder="Buscar por prompt"
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs" style={{ color: COLORS.contrast }}>De</label>
+              <label className="text-xs text-white">De</label>
               <input
                 type="date"
                 value={from}
                 onChange={e => setFrom(e.target.value)}
-                className="rounded border px-2 py-1 text-sm"
-                style={{ borderColor: COLORS.neutral, color: COLORS.contrast }}
+                className="rounded border px-2 py-1 text-sm bg-black/40 text-white"
+                style={{ borderColor: COLORS.neutral }}
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs" style={{ color: COLORS.contrast }}>Até</label>
+              <label className="text-xs text-white">Até</label>
               <input
                 type="date"
                 value={to}
                 onChange={e => setTo(e.target.value)}
-                className="rounded border px-2 py-1 text-sm"
-                style={{ borderColor: COLORS.neutral, color: COLORS.contrast }}
+                className="rounded border px-2 py-1 text-sm bg-black/40 text-white"
+                style={{ borderColor: COLORS.neutral }}
               />
             </div>
             <button
@@ -121,10 +121,10 @@ export default function HistoryPage() {
           </form>
           {error && <div className="text-red-600 text-sm text-center">{error}</div>}
           {loading ? (
-            <div className="text-center text-[var(--neutral)]">Carregando...</div>
+            <div className="text-center text-white">Carregando...</div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-              {data.length === 0 && <div className="col-span-full text-center text-[var(--neutral)]">Nenhum registro encontrado.</div>}
+              {data.length === 0 && <div className="col-span-full text-center text-white">Nenhum registro encontrado.</div>}
               {data.map((item, idx) => (
                 <div key={item.id || idx} className="flex flex-col gap-2 items-center bg-[var(--background)] rounded-lg p-4 shadow border border-[var(--neutral)]" style={{ borderColor: COLORS.neutral }}>
                   <div className="flex gap-2">
@@ -139,10 +139,10 @@ export default function HistoryPage() {
                       <button onClick={() => handleDownload(item.generatedUrl)} className="text-xs underline mt-1" style={{ color: COLORS.neutral }}>Download</button>
                     </div>
                   </div>
-                  <div className="text-xs text-center text-[var(--neutral)]" style={{ color: COLORS.neutral }}>
+                  <div className="text-xs text-center text-white">
                     Prompt: {item.prompt}
                   </div>
-                  <div className="text-xs text-center text-[var(--neutral)]" style={{ color: COLORS.neutral }}>
+                  <div className="text-xs text-center text-white">
                     {new Date(item.createdAt).toLocaleString()}
                   </div>
                 </div>
@@ -158,7 +158,7 @@ export default function HistoryPage() {
             >
               Anterior
             </button>
-            <span className="text-sm" style={{ color: COLORS.contrast }}>
+            <span className="text-sm text-white">
               Página {page} de {Math.max(1, Math.ceil(total / pageSize))}
             </span>
             <button
@@ -172,8 +172,7 @@ export default function HistoryPage() {
           </div>
           <button
             onClick={() => router.push("/dashboard")}
-            className="text-xs text-center text-[var(--neutral)] underline mt-4"
-            style={{ color: COLORS.neutral }}
+            className="text-xs text-center text-white underline mt-4"
           >
             Voltar ao Dashboard
           </button>

@@ -58,27 +58,27 @@ export default function LoginPage() {
         >
           <h1 className="text-2xl font-bold text-center" style={{ color: COLORS.primary }}>Game Change Images</h1>
           <div className="flex flex-col gap-2">
-            <label htmlFor="username" className="font-medium text-sm" style={{ color: COLORS.contrast }}>Usuário</label>
+            <label htmlFor="username" className="font-medium text-sm text-white">Usuário</label>
             <input
               id="username"
               type="text"
               value={username}
               onChange={e => setUsername(e.target.value)}
               className="rounded-xl border-2 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#E50900] bg-black/40 text-white placeholder:text-[#A49FA6]"
-              style={{ borderColor: COLORS.neutral, color: COLORS.contrast }}
+              style={{ borderColor: COLORS.neutral }}
               required
               autoFocus
             />
           </div>
           <div className="flex flex-col gap-2">
-            <label htmlFor="password" className="font-medium text-sm" style={{ color: COLORS.contrast }}>Senha</label>
+            <label htmlFor="password" className="font-medium text-sm text-white">Senha</label>
             <input
               id="password"
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
               className="rounded-xl border-2 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#E50900] bg-black/40 text-white placeholder:text-[#A49FA6]"
-              style={{ borderColor: COLORS.neutral, color: COLORS.contrast }}
+              style={{ borderColor: COLORS.neutral }}
               required
             />
           </div>
@@ -91,7 +91,7 @@ export default function LoginPage() {
           >
             {loading ? "Entrando..." : "Entrar"}
           </button>
-          <div className="text-xs text-center text-[var(--neutral)]" style={{ color: COLORS.neutral }}>
+          <div className="text-xs text-center text-white">
             © Game Change - Inovação ao seu alcance
           </div>
         </form>
