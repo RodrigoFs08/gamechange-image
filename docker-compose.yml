@@ -8,7 +8,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - DATABASE_URL=postgresql://gamechange_user:senha@postgres:5432/gamechange_db
+      - DATABASE_URL=postgres://postgres:ozmtQYEOdBSzU99M66wDYujcLM5moj7strVh3M7DnWKRED8WZte55Q5J3qvvKbsT@wkoooogk08c408k8wgow8kos:5432/postgres
       - GCS_BUCKET=${GCS_BUCKET}
       - GCS_KEYFILE=${GCS_KEYFILE}
       - OPENAI_API_KEY=${OPENAI_API_KEY}

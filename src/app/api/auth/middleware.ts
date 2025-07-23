@@ -1,7 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 
-export function verifyToken(request: NextRequest) {
+interface DecodedToken {
+  user: string;
+  iat: number;
+  exp: number;
+}
+
+interface AuthResult {
+  error?: string;
+  status?: number;
+  user?: DecodedToken;
+}
+
+export function verifyToken(request: NextRequest): AuthResult {
   try {
     const authHeader = request.headers.get("authorization");
     
@@ -14,15 +26,15 @@ export function verifyToken(request: NextRequest) {
     const decoded = jwt.verify(
       token, 
       process.env.JWT_SECRET || "fallback-secret-key"
-    ) as any;
+    ) as DecodedToken;
 
     return { user: decoded };
-  } catch (error) {
+  } catch {
     return { error: "Token inválido", status: 401 };
   }
 }
 
-export function withAuth(handler: Function) {
+export function withAuth(handler: (request: NextRequest) => Promise<NextResponse>) {
   return async (request: NextRequest) => {
     const authResult = verifyToken(request);
     
@@ -34,7 +46,7 @@ export function withAuth(handler: Function) {
     }
 
     // Adicionar usuário ao request
-    (request as any).user = authResult.user;
+    (request as NextRequest & { user: DecodedToken }).user = authResult.user!;
     
     return handler(request);
   };

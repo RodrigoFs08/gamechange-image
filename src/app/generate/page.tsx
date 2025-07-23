@@ -46,15 +46,42 @@ export default function GeneratePage() {
       if (mode === 'edit') {
         if (!file) throw new Error("Selecione uma imagem.");
       }
-      if (!prompt.trim()) throw new Error("Digite um prompt.");
+      
+      // Validação mais robusta do prompt
+      const trimmedPrompt = prompt.trim();
+      if (!trimmedPrompt) {
+        throw new Error("Digite um prompt válido.");
+      }
+      
+      if (trimmedPrompt.length < 3) {
+        throw new Error("O prompt deve ter pelo menos 3 caracteres.");
+      }
+      
+      // Logs de debug
+      console.log("🔍 Debug - Dados sendo enviados:");
+      console.log("Prompt original:", prompt);
+      console.log("Prompt trimmed:", trimmedPrompt);
+      console.log("Mode:", mode);
+      console.log("File:", file ? "Presente" : "Ausente");
+      
       const formData = new FormData();
       if (mode === 'edit' && file) formData.append("image", file);
-      formData.append("prompt", prompt);
+      formData.append("prompt", trimmedPrompt);
       formData.append("mode", mode);
+      
+      // Verificar se os dados foram adicionados ao FormData
+      console.log("🔍 Debug - FormData contents:");
+      for (let [key, value] of formData.entries()) {
+        console.log(`${key}:`, value instanceof File ? "File" : value);
+      }
+      
       const token = localStorage.getItem("token");
       const res = await fetch("/api/image/upload", {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          // Removendo Content-Type para deixar o browser definir automaticamente para FormData
+        },
         body: formData,
       });
       const data = await res.json();
@@ -91,7 +118,7 @@ export default function GeneratePage() {
             className={`px-4 py-2 rounded-l-xl font-bold text-sm transition-colors ${mode === 'edit' ? 'bg-[#E50900] text-white' : 'bg-black/40 text-[#A49FA6]'}`}
             onClick={() => setMode('edit')}
           >
-            Editar Imagem
+            Imagem+Prompt
           </button>
           <button
             type="button"
@@ -102,7 +129,7 @@ export default function GeneratePage() {
           </button>
         </div>
         <form onSubmit={handleGenerate} className="w-full flex flex-col gap-6 items-center bg-[rgba(20,20,20,0.85)] rounded-2xl shadow-xl p-8 border border-[#7F0500]/30 backdrop-blur-md">
-          <h1 className="text-2xl font-bold text-center mb-2" style={{ color: COLORS.highlight }}>{mode === 'edit' ? 'Nova Edição de Imagem' : 'Geração de Imagem do Zero'}</h1>
+          <h1 className="text-2xl font-bold text-center mb-2" style={{ color: COLORS.highlight }}>{mode === 'edit' ? 'Nova Imagem+Prompt' : 'Geração de Imagem do Zero'}</h1>
           {/* Upload por ícone (apenas modo edição) */}
           {mode === 'edit' && (
             <div className="flex flex-col items-center gap-2 w-full">
@@ -152,7 +179,7 @@ export default function GeneratePage() {
             ) : (
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
             )}
-            {loading ? (mode === 'edit' ? "Editando..." : "Gerando...") : (mode === 'edit' ? "Editar Imagem" : "Gerar Imagem")}
+            {loading ? (mode === 'edit' ? "Processando..." : "Gerando...") : (mode === 'edit' ? "Processar Imagem+Prompt" : "Gerar Imagem")}
           </button>
         </form>
         {result && (
