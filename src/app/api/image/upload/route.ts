@@ -37,14 +37,16 @@ async function uploadToGCS(file: Buffer, filename: string): Promise<string> {
 
     const { Storage } = await import("@google-cloud/storage");
     let storage;
-    let isJson = false;
     let credentials = null;
+    let isJson = false;
     try {
-      if (keyFile.trim().startsWith('{')) {
+      // Remove espaços e aspas duplas do início
+      const trimmed = keyFile.trim().replace(/^"+/, "");
+      if (trimmed.startsWith("{")) {
         credentials = JSON.parse(keyFile);
         isJson = true;
       }
-    } catch (parseError) {
+    } catch (e) {
       isJson = false;
     }
     if (isJson && credentials) {
