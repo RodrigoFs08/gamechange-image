@@ -9,11 +9,17 @@ const prisma = new PrismaClient();
 // Função para upload no Google Cloud Storage
 async function uploadToGCS(file: Buffer, filename: string): Promise<string> {
   try {
-    // Verificar se as variáveis de ambiente estão configuradas
     // Suportar tanto as variáveis antigas quanto as novas
     const keyFile = process.env.GOOGLE_CLOUD_KEYFILE || process.env.GCS_KEYFILE;
     const bucketName = process.env.GOOGLE_CLOUD_BUCKET_NAME || process.env.GCS_BUCKET;
-    
+
+    console.log("🔍 Debug - Variáveis GCS:");
+    console.log("🔍 Debug - keyFile existe:", !!keyFile);
+    console.log("🔍 Debug - bucketName existe:", !!bucketName);
+    if (keyFile) {
+      console.log("🔍 Debug - keyFile começa com:", keyFile.substring(0, 50) + "...");
+    }
+
     if (!keyFile || !bucketName) {
       console.warn("Google Cloud Storage não configurado, usando mock");
       // Fallback para mock se não estiver configurado
@@ -29,40 +35,31 @@ async function uploadToGCS(file: Buffer, filename: string): Promise<string> {
       return mockImageData;
     }
 
-    // Integração real com Google Cloud Storage
     const { Storage } = await import("@google-cloud/storage");
-    
-    // Configurar storage com credenciais
     let storage;
-    if (keyFile.startsWith('/')) {
-      // Se for um caminho de arquivo
+    let isJson = false;
+    let credentials = null;
+    try {
+      if (keyFile.trim().startsWith('{')) {
+        credentials = JSON.parse(keyFile);
+        isJson = true;
+      }
+    } catch (parseError) {
+      isJson = false;
+    }
+    if (isJson && credentials) {
+      console.log("🔍 Debug - Usando credenciais como JSON");
+      storage = new Storage({
+        credentials,
+        projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
+      });
+    } else {
+      console.log("🔍 Debug - Usando credenciais como caminho de arquivo");
       storage = new Storage({
         keyFilename: keyFile,
         projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
       });
-    } else {
-      // Se for conteúdo JSON em base64 ou string
-      try {
-        const credentials = JSON.parse(keyFile);
-        storage = new Storage({
-          credentials,
-          projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
-        });
-      } catch (parseError) {
-        console.error("❌ Erro ao fazer parse das credenciais:", parseError);
-        // Fallback para mock
-        const mockImageData = "data:image/svg+xml;base64," + Buffer.from(`
-          <svg width="1024" height="1024" xmlns="http://www.w3.org/2000/svg">
-            <rect width="100%" height="100%" fill="#E50900"/>
-            <text x="50%" y="50%" font-family="Arial" font-size="48" fill="white" text-anchor="middle" dy=".3em">
-              Erro: Credenciais inválidas
-            </text>
-          </svg>
-        `).toString('base64');
-        return mockImageData;
-      }
     }
-
     const bucket = storage.bucket(bucketName);
     const blob = bucket.file(filename);
     
@@ -71,8 +68,6 @@ async function uploadToGCS(file: Buffer, filename: string): Promise<string> {
         contentType: "image/png",
       },
     });
-    
-    // Não precisa tornar público se o bucket já tem permissões adequadas
     
     console.log(`✅ Imagem salva no GCS: ${filename}`);
     
@@ -87,7 +82,6 @@ async function uploadToGCS(file: Buffer, filename: string): Promise<string> {
     // return url;
   } catch (error) {
     console.error("❌ Erro no upload para GCS:", error);
-    // Fallback para mock em caso de erro
     const mockImageData = "data:image/svg+xml;base64," + Buffer.from(`
       <svg width="1024" height="1024" xmlns="http://www.w3.org/2000/svg">
         <rect width="100%" height="100%" fill="#E50900"/>
