@@ -56,11 +56,8 @@ async function uploadToGCS(file: Buffer, filename: string): Promise<string> {
         projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
       });
     } else {
-      console.log("🔍 Debug - Usando credenciais como caminho de arquivo");
-      storage = new Storage({
-        keyFilename: keyFile,
-        projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
-      });
+      console.error("❌ Erro: GOOGLE_CLOUD_KEYFILE não é um JSON válido. Configure a variável corretamente.");
+      throw new Error("GOOGLE_CLOUD_KEYFILE precisa ser um JSON válido. Veja a documentação em GCS_SETUP.md");
     }
     const bucket = storage.bucket(bucketName);
     const blob = bucket.file(filename);
