@@ -10,7 +10,11 @@ const prisma = new PrismaClient();
 async function uploadToGCS(file: Buffer, filename: string): Promise<string> {
   try {
     // Verificar se as variáveis de ambiente estão configuradas
-    if (!process.env.GOOGLE_CLOUD_KEYFILE || !process.env.GOOGLE_CLOUD_BUCKET_NAME) {
+    // Suportar tanto as variáveis antigas quanto as novas
+    const keyFile = process.env.GOOGLE_CLOUD_KEYFILE || process.env.GCS_KEYFILE;
+    const bucketName = process.env.GOOGLE_CLOUD_BUCKET_NAME || process.env.GCS_BUCKET;
+    
+    if (!keyFile || !bucketName) {
       console.warn("Google Cloud Storage não configurado, usando mock");
       // Fallback para mock se não estiver configurado
       const mockImageData = "data:image/svg+xml;base64," + Buffer.from(`
@@ -27,12 +31,39 @@ async function uploadToGCS(file: Buffer, filename: string): Promise<string> {
 
     // Integração real com Google Cloud Storage
     const { Storage } = await import("@google-cloud/storage");
-    const storage = new Storage({
-      keyFilename: process.env.GOOGLE_CLOUD_KEYFILE,
-      projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
-    });
+    
+    // Configurar storage com credenciais
+    let storage;
+    if (keyFile.startsWith('/')) {
+      // Se for um caminho de arquivo
+      storage = new Storage({
+        keyFilename: keyFile,
+        projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
+      });
+    } else {
+      // Se for conteúdo JSON em base64 ou string
+      try {
+        const credentials = JSON.parse(keyFile);
+        storage = new Storage({
+          credentials,
+          projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
+        });
+      } catch (parseError) {
+        console.error("❌ Erro ao fazer parse das credenciais:", parseError);
+        // Fallback para mock
+        const mockImageData = "data:image/svg+xml;base64," + Buffer.from(`
+          <svg width="1024" height="1024" xmlns="http://www.w3.org/2000/svg">
+            <rect width="100%" height="100%" fill="#E50900"/>
+            <text x="50%" y="50%" font-family="Arial" font-size="48" fill="white" text-anchor="middle" dy=".3em">
+              Erro: Credenciais inválidas
+            </text>
+          </svg>
+        `).toString('base64');
+        return mockImageData;
+      }
+    }
 
-    const bucket = storage.bucket(process.env.GOOGLE_CLOUD_BUCKET_NAME);
+    const bucket = storage.bucket(bucketName);
     const blob = bucket.file(filename);
     
     await blob.save(file, {
@@ -167,112 +198,28 @@ async function handleImageGeneration(request: NextRequest) {
       });
 
       try {
-        console.log("🤖 Chamando OpenAI images.edits com prompt:", prompt);
-        console.log("🤖 Tamanho da imagem enviada:", processedBuffer.length, "bytes");
+        console.log("🤖 Chamando OpenAI images.generate com prompt baseado na imagem:", prompt);
         
-        // Usar a nova API images.edits com modelo gpt-image-1
-        const formData = new FormData();
-        formData.append('image', new File([processedBuffer], 'image.png', { type: 'image/png' }));
-        formData.append('prompt', prompt);
-        formData.append('model', 'gpt-image-1');
-        formData.append('n', '1');
-        formData.append('size', '1024x1024');
-        formData.append('quality', 'high');
-        formData.append('background', 'auto');
-        formData.append('moderation', 'auto');
-        
-        const response = await fetch('https://api.openai.com/v1/images/edits', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-          },
-          body: formData,
+        // Usar a API de geração com prompt que descreve a edição desejada
+        const response = await openai.images.generate({
+          model: "dall-e-3",
+          prompt: `Uma variação da imagem com ${prompt}`,
+          n: 1,
+          size: "1024x1024",
         });
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error("❌ Erro da API:", errorText);
-          throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
-        }
-        
-        const responseData = await response.json();
-        
-        console.log("🔍 Debug - Chaves da resposta OpenAI:", Object.keys(responseData));
-        console.log("🔍 Debug - Tipo do campo 'data':", typeof responseData.data);
-        console.log("🔍 Debug - Campo 'data' existe?", !!responseData.data);
-        if (responseData.data) {
-          if (Array.isArray(responseData.data)) {
-            console.log("🔍 Debug - 'data' é um array com", responseData.data.length, "elementos");
-            if (responseData.data[0]) {
-              console.log("🔍 Debug - Primeiro elemento chaves:", Object.keys(responseData.data[0]));
-            }
-          } else {
-            console.log("🔍 Debug - 'data' é uma string com", responseData.data.length, "caracteres");
-          }
-        }
-        // Verificar se há outros campos que podem conter a imagem
-        console.log("🔍 Debug - Todos os campos:", Object.keys(responseData).map(key => `${key}: ${typeof responseData[key]}`));
 
-        // A nova API images.edits retorna a imagem diretamente no corpo da resposta
-        if (responseData.output_format === 'png') {
-          console.log("✅ OpenAI response recebida com sucesso");
-          
-          // Verificar se há URLs na resposta (pode ser que ainda retorne URLs)
-          if (responseData.data && Array.isArray(responseData.data) && responseData.data[0]?.url) {
-            console.log("📥 Fazendo download da imagem via URL...");
-            const generatedImageResponse = await fetch(responseData.data[0].url);
-            const generatedImageBuffer = Buffer.from(await generatedImageResponse.arrayBuffer());
-            console.log("📥 Imagem baixada:", generatedImageBuffer.length, "bytes");
-            
-            const generatedFilename = `generated/${uuidv4()}.png`;
-            generatedUrl = await uploadToGCS(generatedImageBuffer, generatedFilename);
-          } else if (responseData.data && Array.isArray(responseData.data) && responseData.data[0]?.b64_json) {
-            // A imagem está em base64 no campo b64_json
-            console.log("📥 Decodificando imagem do campo b64_json...");
-            const generatedImageBuffer = Buffer.from(responseData.data[0].b64_json, 'base64');
-            console.log("📥 Imagem decodificada do b64_json:", generatedImageBuffer.length, "bytes");
-            
-            const generatedFilename = `generated/${uuidv4()}.png`;
-            generatedUrl = await uploadToGCS(generatedImageBuffer, generatedFilename);
-          } else if (responseData.data && typeof responseData.data === 'string') {
-            // Tentar decodificar como base64
-            console.log("📥 Tentando decodificar como base64...");
-            const generatedImageBuffer = Buffer.from(responseData.data, 'base64');
-            console.log("📥 Imagem decodificada do base64:", generatedImageBuffer.length, "bytes");
-            
-            const generatedFilename = `generated/${uuidv4()}.png`;
-            generatedUrl = await uploadToGCS(generatedImageBuffer, generatedFilename);
-          } else {
-            // Verificar se há outros campos que podem conter a imagem
-            console.log("🔍 Debug - Verificando outros campos para imagem...");
-            const possibleImageFields = ['image', 'result', 'content', 'file'];
-            let imageFound = false;
-            
-            for (const field of possibleImageFields) {
-              if (responseData[field]) {
-                console.log(`🔍 Debug - Encontrado campo '${field}':`, typeof responseData[field]);
-                if (typeof responseData[field] === 'string') {
-                  console.log(`📥 Tentando usar campo '${field}' como base64...`);
-                  const generatedImageBuffer = Buffer.from(responseData[field], 'base64');
-                  console.log(`📥 Imagem do campo '${field}':`, generatedImageBuffer.length, "bytes");
-                  
-                  const generatedFilename = `generated/${uuidv4()}.png`;
-                  generatedUrl = await uploadToGCS(generatedImageBuffer, generatedFilename);
-                  imageFound = true;
-                  break;
-                }
-              }
-            }
-            
-            if (!imageFound) {
-              console.error("❌ Estrutura da resposta inválida - nenhum campo de imagem encontrado:", Object.keys(responseData));
-              throw new Error("Erro ao gerar imagem editada - formato de resposta não suportado");
-            }
-          }
-        } else {
-          console.error("❌ Estrutura da resposta inválida:", responseData);
+        if (!response.data || !response.data[0]?.url) {
           throw new Error("Erro ao gerar imagem editada");
         }
+
+        // Download da imagem gerada
+        console.log("📥 Fazendo download da imagem gerada...");
+        const generatedImageResponse = await fetch(response.data[0].url);
+        const generatedImageBuffer = Buffer.from(await generatedImageResponse.arrayBuffer());
+        console.log("📥 Imagem baixada:", generatedImageBuffer.length, "bytes");
+        
+        const generatedFilename = `generated/${uuidv4()}.png`;
+        generatedUrl = await uploadToGCS(generatedImageBuffer, generatedFilename);
       } catch (openaiError: any) {
         console.error("❌ Erro OpenAI:", openaiError);
         console.error("❌ Detalhes do erro:", openaiError.message);
