@@ -50,7 +50,7 @@ postgres_data/
 /src/generated/prisma
 
 # Google Cloud credentials
-plim-ai-cb3ed5bfa6e7.json
+
 *.json
 !package.json
 !package-lock.json
