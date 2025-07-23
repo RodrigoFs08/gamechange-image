@@ -39,15 +39,26 @@ async function uploadToGCS(file: Buffer, filename: string): Promise<string> {
     let storage;
     let credentials = null;
     let isJson = false;
-    try {
-      // Remove espaços e aspas duplas do início e fim
-      const trimmed = keyFile.trim().replace(/^"+|"+$/g, "");
-      if (trimmed.startsWith("{")) {
-        credentials = JSON.parse(trimmed);
-        isJson = true;
+    // Novo: suporte a URL
+    if (keyFile.trim().startsWith('http')) {
+      console.log('🔍 Debug - keyFile é uma URL, baixando JSON de credenciais...');
+      const res = await fetch(keyFile.trim());
+      if (!res.ok) {
+        throw new Error('Não foi possível baixar o JSON de credenciais do link informado.');
       }
-    } catch (e) {
-      isJson = false;
+      credentials = await res.json();
+      isJson = true;
+    } else {
+      try {
+        // Remove espaços e aspas duplas do início e fim
+        const trimmed = keyFile.trim().replace(/^"+|"+$/g, "");
+        if (trimmed.startsWith("{")) {
+          credentials = JSON.parse(trimmed);
+          isJson = true;
+        }
+      } catch (e) {
+        isJson = false;
+      }
     }
     if (isJson && credentials) {
       console.log("🔍 Debug - Usando credenciais como JSON");
@@ -56,8 +67,8 @@ async function uploadToGCS(file: Buffer, filename: string): Promise<string> {
         projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
       });
     } else {
-      console.error("❌ Erro: GOOGLE_CLOUD_KEYFILE não é um JSON válido. Configure a variável corretamente.");
-      throw new Error("GOOGLE_CLOUD_KEYFILE precisa ser um JSON válido. Veja a documentação em GCS_SETUP.md");
+      console.error("❌ Erro: GOOGLE_CLOUD_KEYFILE não é um JSON válido nem uma URL válida. Configure a variável corretamente.");
+      throw new Error("GOOGLE_CLOUD_KEYFILE precisa ser um JSON válido ou uma URL para um JSON. Veja a documentação em GCS_SETUP.md");
     }
     const bucket = storage.bucket(bucketName);
     const blob = bucket.file(filename);
